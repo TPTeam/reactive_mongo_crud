@@ -44,7 +44,7 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
       val globalRes = Promise[Option[T]]
       
       (this) match {
-        case me : ReverseRefPersistanceCompanion[T, _] => {
+        case me : SonPersistanceCompanion[T, _] => {
         	  me.updateUpOnUpdate(id,obj).onComplete{
         	    _ => res1.trySuccess(true)
         	  }
@@ -53,7 +53,7 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
           res1.trySuccess(true)
       }
       (this) match {
-        case me : DirectRefPersistanceCompanion[T, _] => {
+        case me : FatherPersistanceCompanion[T, _] => {
           me.updateDownOnUpdate(id,obj).onComplete{
         	    _ => res2.trySuccess(true)
         	  }
@@ -83,7 +83,7 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
       val globalRes = Promise[Option[T]]
       
       (this) match {
-        case me : ReverseRefPersistanceCompanion[T, _] => {
+        case me : SonPersistanceCompanion[T, _] => {
         	  me.updateUpOnCreate(obj).onComplete{
         	    _ => res1.trySuccess(true)
         	  }
@@ -92,7 +92,7 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
           res1.trySuccess(true)
       }
       (this) match {
-        case me : DirectRefPersistanceCompanion[T, _] => {
+        case me : FatherPersistanceCompanion[T, _] => {
           me.updateDownOnCreate(obj).onComplete{
         	    _ => res2.trySuccess(true)
         	  }
@@ -122,7 +122,7 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
       val globalRes = Promise[Boolean]
       
       (this) match {
-        case me : ReverseRefPersistanceCompanion[T, _] => {
+        case me : SonPersistanceCompanion[T, _] => {
         	  me.updateUpOnDelete(id).onComplete{
         	    _ => res1.trySuccess(true)
         	  }
@@ -131,7 +131,7 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
           res1.trySuccess(true)
       }
       (this) match {
-        case me : DirectRefPersistanceCompanion[T, _] => {
+        case me : FatherPersistanceCompanion[T, _] => {
           me.updateDownOnDelete(id).onComplete{
         	    _ => res2.trySuccess(true)
         	  }
@@ -154,34 +154,4 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
       
     }
 
-}
-
-
-trait ReverseRefPersistanceCompanion[T <: ModelObj, R <: ModelObj] { 
-
-	def referenceChanged: ((Option[Reference[R]], Reference[T]) => Future[Boolean])
-	
-	// links management methos signatures used in performing crud ops
-	def updateUpOnUpdate(id: BSONObjectID, obj: T): Future[Boolean]
-	
-	def updateUpOnCreate(obj: T): Future[Boolean]
-	
-	def updateUpOnDelete(id: BSONObjectID): Future[Boolean]
-    
-}
-
-
-trait DirectRefPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
-  
-	def removeFrom(toBeRemoved: List[Reference[R]], from: List[T]): Future[Boolean]
-	
-	def addTo(toBeAdded: List[Reference[R]], to: T): Future[Boolean]
-	
-	// links management methos signatures used in performing crud ops
-	def updateDownOnUpdate(id: BSONObjectID, obj: T): Future[Boolean]
-	
-	def updateDownOnCreate(obj: T): Future[Boolean]
-	
-	def updateDownOnDelete(id: BSONObjectID): Future[Boolean]
-  
 }

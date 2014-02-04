@@ -2,7 +2,6 @@ package models.persistance
 
 import models.ModelObj
 import models._
-import models.DirectRefPersistanceCompanion
 import reactivemongo.bson.BSONObjectID
 import scala.util.{Success, Failure}
 import scala.concurrent._
@@ -11,12 +10,16 @@ import scala.language.implicitConversions
 import play.api.Logger._
 
 
-trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] extends DirectRefPersistanceCompanion[T, R] {
+trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
   self: PersistanceCompanion[T] =>  
   
-  val CHILD: PersistanceCompanion[R] with ReverseRefPersistanceCompanion[R,T] 
+  val CHILD: PersistanceCompanion[R] with SonPersistanceCompanion[R,T] 
   
   def getSons(obj: T): List[Reference[R]]
+  
+  def removeFrom(toBeRemoved: List[Reference[R]], from: List[T]): Future[Boolean]
+	
+  def addTo(toBeAdded: List[Reference[R]], to: T): Future[Boolean]
   
   
   def updateDownOnCreate(obj: T) = {  

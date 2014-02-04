@@ -1,8 +1,6 @@
 package models.persistance
 
-import models.ReverseRefPersistanceCompanion
 import models.ModelObj
-import models.DirectRefPersistanceCompanion
 import reactivemongo.bson.BSONObjectID
 import scala.concurrent.Promise
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -14,15 +12,16 @@ import scala.util.Failure
 import play.api.Logger._
 
 
-trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] extends ReverseRefPersistanceCompanion[T, R]
-{
+trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 	self: PersistanceCompanion[T] =>
 		  
-	type FATHER = PersistanceCompanion[R] with DirectRefPersistanceCompanion[R,T]   
+	type FATHER = PersistanceCompanion[R] with FatherPersistanceCompanion[R,T]   
 	
 	val FatherPC: FATHER
 	
 	def getFather(obj: T): Option[Reference[R]]	
+	
+	def referenceChanged: ((Option[Reference[R]], Reference[T]) => Future[Boolean])
 	
 	
 	def updateUpOnCreate(obj: T) = {
