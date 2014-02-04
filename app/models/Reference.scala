@@ -38,7 +38,6 @@ trait ReferenceJSONer[A <: ModelObj] {
 trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
   
     def update(id: BSONObjectID, obj: T) = {
-      logger.debug("REF PERSISTANCE COMPANION UPDATE")
       val res1 = Promise[Boolean]
       val res2 = Promise[Boolean]
       val globalRes = Promise[Option[T]]
@@ -77,7 +76,6 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
     
     
     def create(obj: T) = {
-      logger.debug("REF PERSISTANCE COMPANION CREATE")
       val res1 = Promise[Boolean]
       val res2 = Promise[Boolean]
       val globalRes = Promise[Option[T]]
@@ -116,7 +114,6 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
     
     
     def delete(id: BSONObjectID) = {
-      logger.debug("REF PERSISTANCE COMPANION DELETE")
       val res1 = Promise[Boolean]
       val res2 = Promise[Boolean]
       val globalRes = Promise[Boolean]

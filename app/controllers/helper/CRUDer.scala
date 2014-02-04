@@ -57,13 +57,13 @@ trait CRUDer[C <: ModelObj] extends SingletonDefiner[C] with Router.Routes {
       Future{
       val _form = form.apply
       _form.bindFromRequest.fold(
-          badForm => viewBadForm.apply(badForm),
-           /* _form.bind(
+          badForm => 
+           _form.bind(
                 badForm.data ++ 
                 badForm.errors.seq.map(err => (err.key -> ""))
                 ).fold(
                 definitiveBad => viewBadForm.apply(badForm),
-                elem => success(elem)),*/
+                elem => success(elem)),
           elem => success(elem)
        )}
     } 
