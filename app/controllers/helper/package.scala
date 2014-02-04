@@ -16,7 +16,7 @@ package object controllerhelper {
     new {
 	  def verifyId:  play.api.data.Mapping[String] =
 	    x.verifying(id => {
-	       checko({new BSONObjectID(id);true})
+	       checko({BSONObjectID.parse(id);true})
 	    })
   	}
   
