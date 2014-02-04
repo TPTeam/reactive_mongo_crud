@@ -68,7 +68,6 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] extends ReverseRefPe
 	
 	
 	def updateUpOnUpdate(id: BSONObjectID, obj: T) = {
-		logger.debug("UPDATEUPSUBTREE") 
 		val fathersRemoveFromBlock = Promise[Boolean]
 		val fathersAddToBlock = Promise[Boolean]
 		val overallBlock = Promise[Boolean]

@@ -73,7 +73,6 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] extends DirectRef
     
   
   def updateDownOnUpdate(id: BSONObjectID, obj: T) = {
-    logger.debug("UPDATEDOWNSUBTREE") 
     val overallBlock = Promise[Boolean]
     val removeFromGPBlock = Promise[Boolean]
     val updateFathersBlock = Promise[Boolean]
@@ -111,7 +110,6 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] extends DirectRef
 		
     		val resOldSons = Future.fold(oldsForBlock.map(x => x.future))(true)((i, l) => l)
     		val resNewSons = Future.fold(newsForBlock.map(x => x.future))(true)((i, l) => l)
-    		logger.debug("END") 
     	
     		for{	//finally update gp
     			block1 <- removeFromGPBlock.future 
@@ -119,7 +117,6 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] extends DirectRef
     			block3 <- resNewSons
     		}yield{
     			overallBlock.trySuccess(true)
-    			    logger.debug("FINISH") 
     		}
     	}
         

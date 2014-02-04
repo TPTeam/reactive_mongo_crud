@@ -45,8 +45,6 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
       
       (this) match {
         case me : ReverseRefPersistanceCompanion[T, _] => {
-                logger.debug("ReverseRefPersistanceCompanion")
-
         	  me.updateUpOnUpdate(id,obj).onComplete{
         	    _ => res1.trySuccess(true)
         	  }
@@ -56,7 +54,6 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
       }
       (this) match {
         case me : DirectRefPersistanceCompanion[T, _] => {
-          logger.debug("DirectRefPersistanceCompanion")
           me.updateDownOnUpdate(id,obj).onComplete{
         	    _ => res2.trySuccess(true)
         	  }
@@ -87,8 +84,6 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
       
       (this) match {
         case me : ReverseRefPersistanceCompanion[T, _] => {
-                logger.debug("ReverseRefPersistanceCompanion")
-
         	  me.updateUpOnCreate(obj).onComplete{
         	    _ => res1.trySuccess(true)
         	  }
@@ -98,7 +93,6 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
       }
       (this) match {
         case me : DirectRefPersistanceCompanion[T, _] => {
-          logger.debug("DirectRefPersistanceCompanion")
           me.updateDownOnCreate(obj).onComplete{
         	    _ => res2.trySuccess(true)
         	  }
@@ -129,8 +123,6 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
       
       (this) match {
         case me : ReverseRefPersistanceCompanion[T, _] => {
-                logger.debug("ReverseRefPersistanceCompanion")
-
         	  me.updateUpOnDelete(id).onComplete{
         	    _ => res1.trySuccess(true)
         	  }
@@ -140,7 +132,6 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
       }
       (this) match {
         case me : DirectRefPersistanceCompanion[T, _] => {
-          logger.debug("DirectRefPersistanceCompanion")
           me.updateDownOnDelete(id).onComplete{
         	    _ => res2.trySuccess(true)
         	  }
@@ -170,7 +161,7 @@ trait ReverseRefPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 
 	def referenceChanged: ((Option[Reference[R]], Reference[T]) => Future[Boolean])
 	
-	//
+	// links management methos signatures used in performing crud ops
 	def updateUpOnUpdate(id: BSONObjectID, obj: T): Future[Boolean]
 	
 	def updateUpOnCreate(obj: T): Future[Boolean]
@@ -186,7 +177,7 @@ trait DirectRefPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 	
 	def addTo(toBeAdded: List[Reference[R]], to: T): Future[Boolean]
 	
-	//
+	// links management methos signatures used in performing crud ops
 	def updateDownOnUpdate(id: BSONObjectID, obj: T): Future[Boolean]
 	
 	def updateDownOnCreate(obj: T): Future[Boolean]
