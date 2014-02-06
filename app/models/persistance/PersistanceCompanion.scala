@@ -117,8 +117,8 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
     
   def findByAttName(attName: String, attValue: String) = {
     (attName,attValue) match {
-      case ("_id",_) => findOneByIdString(attValue)
-      case _ => collection.find(BSONDocument(attName -> attValue)).cursor[T].collect[List]()
+      case ("_id",_) => collection.find(BSONDocument("_id" -> new BSONObjectID(attValue))).cursor[T]
+      case _ => collection.find(BSONDocument(attName -> attValue)).cursor[T]
     }
   }  
 }
