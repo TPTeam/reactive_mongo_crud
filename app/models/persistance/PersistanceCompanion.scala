@@ -114,4 +114,11 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
   def count =
     db.command(reactivemongo.core.commands.Count(collectionName))
 
+    
+  def findByAttName(attName: String, attValue: String) = {
+    (attName,attValue) match {
+      case ("_id",_) => findOneByIdString(attValue)
+      case _ => collection.find(BSONDocument(attName -> attValue)).cursor[T].collect[List]()
+    }
+  }  
 }
