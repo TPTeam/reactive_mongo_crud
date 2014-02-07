@@ -7,8 +7,6 @@ import scala.util.{Success, Failure}
 import scala.concurrent._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import scala.language.implicitConversions
-import play.api.Logger._
-
 
 trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
   self: PersistanceCompanion[T] =>  

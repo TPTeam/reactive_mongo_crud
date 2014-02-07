@@ -48,15 +48,12 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
  
   
   protected def _update(id: BSONObjectID,obj: T) = {
-    logger.debug(s"DO update!") 
     val res = Promise[Option[T]]
     val result = collection.update(BSONDocument("_id" -> id), obj)
     
     result.onComplete
     {
       case Success(s) => {
-        logger.debug(s"Object updated ${id.toString}") 
-        logger.debug("OBJECT: "+obj.toString())
         res.trySuccess(Some(obj))
       }
       case Failure(f) => {
