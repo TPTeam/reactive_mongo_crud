@@ -11,6 +11,18 @@ import play.Logger
 
 
 package object controllerhelper {
+  
+  /*
+   * The following workaround is needed by MongoDB's
+   *  
+	Restrictions on Field Names
+    Field names cannot contain dots (i.e. .), dollar signs (i.e. $), or null characters.
+   * 
+   */
+  def fromMongoToView(x: String) = 
+    x.replace("%£","$").replace("%§",".")
+  def fromViewToMongo(x: String) = 
+    x.replace("$", "%£").replace(".","%§")
 
   implicit def fromMappingToVerifiedId(x: Mapping[String]) =
     new {
