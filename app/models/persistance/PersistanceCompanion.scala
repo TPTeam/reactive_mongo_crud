@@ -48,15 +48,12 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
  
   
   protected def _update(id: BSONObjectID,obj: T) = {
-    logger.debug(s"DO update!") 
     val res = Promise[Option[T]]
     val result = collection.update(BSONDocument("_id" -> id), obj)
     
     result.onComplete
     {
       case Success(s) => {
-        logger.debug(s"Object updated ${id.toString}") 
-        logger.debug("OBJECT: "+obj.toString())
         res.trySuccess(Some(obj))
       }
       case Failure(f) => {
@@ -101,15 +98,26 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
   def findAll = {
     collection.find(BSONDocument()).cursor[T]
   }
+    
   
   object IdBSONReader extends BSONDocumentReader[BSONObjectID] {
     def read(doc: BSONDocument): BSONObjectID =
         doc.getAs[BSONObjectID]("_id").get
   }
   
+  
+  def idStringReader(stringField: String) = new BSONDocumentReader[(BSONObjectID,String)]{   
+    def read(doc: BSONDocument): (BSONObjectID,String) = {
+      (doc.getAs[BSONObjectID]("_id").get,
+      doc.getAs[String](stringField).get)
+    }
+  }
+    
+  
   def findAllIds = {
     collection.find(BSONDocument(), BSONDocument("_id" -> 1)).cursor(IdBSONReader, defaultContext)
   }
+  
   
   def count =
     db.command(reactivemongo.core.commands.Count(collectionName))
@@ -117,8 +125,10 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
     
   def findByAttName(attName: String, attValue: String) = {
     (attName,attValue) match {
-      case ("_id",_) => findOneByIdString(attValue)
-      case _ => collection.find(BSONDocument(attName -> attValue)).cursor[T].collect[List]()
+      case ("_id",_) => collection.find(BSONDocument("_id" -> new BSONObjectID(attValue))).cursor[T]
+      case _ => collection.find(BSONDocument(attName -> attValue)).cursor[T]
     }
   }  
+
+  
 }
