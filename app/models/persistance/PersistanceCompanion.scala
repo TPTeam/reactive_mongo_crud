@@ -118,4 +118,16 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
       case _ => collection.find(BSONDocument(attName -> attValue)).cursor[T]
     }
   }  
+  
+  def findByAttNameWithFilter(attName: String, attValue: String,  filters: List[(String, String)]) = {
+    (filters.isEmpty) match{
+      case true => findByAttName(attName: String, attValue: String)
+      case false => {
+        val filter = filters.map(f => BSONDocument(f._1 -> f._2))
+        collection.find(BSONDocument(attName -> attValue),filter.tail.foldRight(filter.head)((b1,b2) => b1.add(b2))).cursor[T]
+      }
+    }
+    	
+  }
+  
 }
