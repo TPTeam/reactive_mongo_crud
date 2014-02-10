@@ -98,23 +98,26 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
   def findAll = {
     collection.find(BSONDocument()).cursor[T]
   }
+    
   
   object IdBSONReader extends BSONDocumentReader[BSONObjectID] {
     def read(doc: BSONDocument): BSONObjectID =
         doc.getAs[BSONObjectID]("_id").get
   }
   
-    
- object idNameReader extends BSONDocumentReader[(BSONObjectID,String)] {
+  
+  def idStringReader(stringField: String) = new BSONDocumentReader[(BSONObjectID,String)]{   
     def read(doc: BSONDocument): (BSONObjectID,String) = {
       (doc.getAs[BSONObjectID]("_id").get,
-      doc.getAs[String]("name").get)
+      doc.getAs[String](stringField).get)
     }
   }
+    
   
   def findAllIds = {
     collection.find(BSONDocument(), BSONDocument("_id" -> 1)).cursor(IdBSONReader, defaultContext)
   }
+  
   
   def count =
     db.command(reactivemongo.core.commands.Count(collectionName))
@@ -126,16 +129,6 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
       case _ => collection.find(BSONDocument(attName -> attValue)).cursor[T]
     }
   }  
-  
-  def findByAttNameWithFilter(attName: String, attValue: String,  filters: List[(String, String)]) = {
-    (filters.isEmpty) match{
-      case true => findByAttName(attName: String, attValue: String)
-      case false => {
-        val filter = filters.map(f => BSONDocument(f._1 -> f._2))
-        collection.find(BSONDocument(attName -> attValue),filter.tail.foldRight(filter.head)((b1,b2) => b1.add(b2))).cursor[T]
-      }
-    }
-    	
-  }
+
   
 }
