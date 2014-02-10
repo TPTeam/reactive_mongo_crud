@@ -104,6 +104,14 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
         doc.getAs[BSONObjectID]("_id").get
   }
   
+    
+ object idNameReader extends BSONDocumentReader[(BSONObjectID,String)] {
+    def read(doc: BSONDocument): (BSONObjectID,String) = {
+      (doc.getAs[BSONObjectID]("_id").get,
+      doc.getAs[String]("name").get)
+    }
+  }
+  
   def findAllIds = {
     collection.find(BSONDocument(), BSONDocument("_id" -> 1)).cursor(IdBSONReader, defaultContext)
   }
