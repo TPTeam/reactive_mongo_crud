@@ -21,18 +21,23 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
 	 * To implement or to
 	 * override
 	 */
-    //def elemValues(elem :C): Seq[String]
-    def SeqObjReader(keys: Seq[String]) = new BSONDocumentReader[Seq[String]] {
-      def read(doc: BSONDocument): Seq[String] = {
-        keys.map(k =>
-          doc.getAs[String](k).get
-          )
-      }
-    }
-    
     val elemsToDisplay = Seq("name","description")
+    def elemReader(keys: Seq[String])(doc: BSONDocument): Seq[String] = {
+      keys.map(k =>
+      	if (k=="id")
+      		doc.getAs[BSONObjectID]("_id").get.stringify
+        else
+        	doc.getAs[String](k).get
+      )
+    }
     val defaultDisplayLenth: Long = 10
 	val defaultSortBy = "name"
+	  
+	def SeqObjReader(keys: Seq[String]) = new BSONDocumentReader[Seq[String]] {
+      def read(doc: BSONDocument): Seq[String] = {
+        elemReader(keys)(doc)
+      }
+    }
     
 	def sortBy(implicit params: Map[String,Seq[String]]) =
 		  tryo(elemsToDisplay(sortCol.toInt)).getOrElse(defaultSortBy)
@@ -81,7 +86,6 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
             		  ))
     }
     def table = Action.async { implicit request ⇒
-      //Future {
         implicit val params = request.queryString
         
             /**
@@ -89,8 +93,7 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
              */
             import Json._
             import tp_utils.Jsoner._
-              
-            println("fin qui ok...")
+
             for {
               iTotalRecords <- singleton.count;
               ap <- actualPage(iTotalRecords).cursor[Seq[String]](SeqObjReader(elemsToDisplay), defaultContext).collect[List]()
@@ -105,13 +108,12 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
             				JsArray(
             						ap.map(elem => 
             			  JsObject(
-            			      elemsToDisplay/*elemValues(elem)*/.zipWithIndex.map(e =>
-            			      		e._2.toString -> toJson(e._1)
+            			      elemsToDisplay.zipWithIndex.map(e =>
+            			      		e._2.toString -> toJson(elem(e._2))
                             ))
                        ).toSeq)   
           )
         ))
-            }
-      //}
+     }
   }
 }
