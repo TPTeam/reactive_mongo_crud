@@ -10,6 +10,8 @@ import scala.concurrent.Future
 import scala.util.Success
 import scala.util.Failure
 import play.api.Logger._
+import reactivemongo.bson.BSONDocumentReader
+import reactivemongo.bson.BSONDocument
 
 
 trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
@@ -23,6 +25,12 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 	
 	def referenceChanged: ((Option[Reference[R]], Reference[T]) => Future[Boolean])
 	
+	def FatherReferenceReader(field: String) = 
+	  new BSONDocumentReader[Reference[R]] {
+		def read(doc: BSONDocument): Reference[R] = {
+    		doc.getAs[Reference[R]](field)(FatherPC.ReferenceReader).get
+		}
+	  }
 	
 	def updateUpOnCreate(obj: T) = {
 		val overallBlock = Promise[Boolean]

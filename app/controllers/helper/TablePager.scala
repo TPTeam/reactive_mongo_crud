@@ -21,7 +21,15 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
 	 * To implement or to
 	 * override
 	 */
-    def elemValues(elem :C): Seq[String]
+    //def elemValues(elem :C): Seq[String]
+    def SeqObjReader(keys: Seq[String]) = new BSONDocumentReader[Seq[String]] {
+      def read(doc: BSONDocument): Seq[String] = {
+        keys.map(k =>
+          doc.getAs[String](k).get
+          )
+      }
+    }
+    
     val elemsToDisplay = Seq("name","description")
     val defaultDisplayLenth: Long = 10
 	val defaultSortBy = "name"
@@ -57,7 +65,7 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
           "$or" -> elemsToDisplay.map(elem => BSONDocument(elem -> filt))),	//filter
           BSONDocument.apply(												//projection
               for{elem <- elemsToDisplay} yield {
-            	  elem -> BSONInteger(1)
+            	  elem -> BSONBoolean(true)
               }))
     
     import scala.language.postfixOps
@@ -81,11 +89,11 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
              */
             import Json._
             import tp_utils.Jsoner._
-            implicit val reader = singleton.reader
               
+            println("fin qui ok...")
             for {
               iTotalRecords <- singleton.count;
-              ap <- actualPage(iTotalRecords).cursor[C].collect[List]()
+              ap <- actualPage(iTotalRecords).cursor[Seq[String]](SeqObjReader(elemsToDisplay), defaultContext).collect[List]()
             } yield {
             Ok(
             JsObject(
@@ -97,7 +105,7 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
             				JsArray(
             						ap.map(elem => 
             			  JsObject(
-            			      elemValues(elem).zipWithIndex.map(e =>
+            			      elemsToDisplay/*elemValues(elem)*/.zipWithIndex.map(e =>
             			      		e._2.toString -> toJson(e._1)
                             ))
                        ).toSeq)   
