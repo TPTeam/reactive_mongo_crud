@@ -54,7 +54,11 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
 
     def objsWithQuery(implicit params: Map[String,Seq[String]]) =
       obj.find(BSONDocument(
-          "$or" -> elemsToDisplay.map(elem => BSONDocument(elem -> filt))))
+          "$or" -> elemsToDisplay.map(elem => BSONDocument(elem -> filt))),	//filter
+          BSONDocument.apply(												//projection
+              for{elem <- elemsToDisplay} yield {
+            	  elem -> BSONInteger(1)
+              }))
     
     import scala.language.postfixOps
     def actualPage(iTotalRecords: Int)(implicit params: Map[String,Seq[String]]) = {
@@ -62,11 +66,10 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
             .sort(BSONDocument(sortBy -> order))
             .options(
             		reactivemongo.api.QueryOpts(skipN = start, batchSizeN = //pageSize
-            		  Integer.valueOf(
             				  {
-            				      if ((start + pageSize) > iTotalRecords) (pageSize - start) toString
-            					  else pageSize toString
-            				  })
+            				      if ((start + pageSize) > iTotalRecords) (pageSize - start)
+            					  else pageSize
+            				  }
             		  ))
     }
     def table = Action.async { implicit request ⇒

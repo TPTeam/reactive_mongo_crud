@@ -10,12 +10,18 @@ import scala.util.Failure
 import models.persistance.PersistanceCompanion
 import play.api.Logger._
 
-case class Reference[T <: ModelObj](id: BSONObjectID) {
+case class Reference[T <: ModelObj](id: BSONObjectID)(implicit resolver: PersistanceCompanion[T]) {
+  
+  def resolve =
+    resolver.findOneById(id)
     
 }
 
 
 trait ReferenceJSONer[A <: ModelObj] {
+  self: PersistanceCompanion[A] =>
+  
+  implicit val resolver = self
   
   implicit object ReferenceReader extends BSONDocumentReader[Reference[A]] {
     def read(doc: BSONDocument): Reference[A] =
