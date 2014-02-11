@@ -18,3 +18,8 @@ test-result
 server.pid
 *.iml
 *.eml
+
+.settings
+.target
+.project
+.cache
