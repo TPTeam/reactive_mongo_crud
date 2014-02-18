@@ -93,7 +93,7 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
         r1 <- res1.future
         r2 <- res2.future
       } yield {
-        super._update(id, obj).onComplete
+        this._update(id, obj).onComplete
         {
           case Success(s) => globalRes.success(s)
           case Failure(f) => globalRes.failure(f)
@@ -131,7 +131,7 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
         r1 <- res1.future
         r2 <- res2.future
       } yield {
-        super._create(obj).onComplete
+        this._create(obj).onComplete
         {
           case Success(s) => globalRes.success(s)
           case Failure(f) => globalRes.failure(f)
@@ -169,7 +169,7 @@ trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
         r1 <- res1.future
         r2 <- res2.future
       } yield {
-        super._delete(id).onComplete
+        this._delete(id).onComplete
         {
           case Success(s) => globalRes.success(s)
           case Failure(f) => globalRes.failure(f)

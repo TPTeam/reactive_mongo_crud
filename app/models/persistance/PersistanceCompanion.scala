@@ -45,7 +45,7 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
       }
     }
   }
- 
+ this.collection.StructureBufferWriter
   
   protected def _update(id: BSONObjectID,obj: T) = {
     val res = Promise[Option[T]]
