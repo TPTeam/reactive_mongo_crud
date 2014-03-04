@@ -52,10 +52,15 @@ trait CRUDer[C <: ModelObj] extends SingletonDefiner[C] with Router.Routes {
   	}
   }
   
+  private val _formObjectID = "id"
+  
   case class FormBinder(form: () => Form[C])(implicit request: Request[AnyContent]) {
     def bindFromRequest: Future[SimpleResult] = {
       Future{
-      val _form = form.apply
+      getObjectToRemove(_formObjectID) match {
+        case Some(toRem) =>
+          deletion(toRem)
+        case None => val _form = form.apply
       _form.bindFromRequest.fold(
           badForm => 
            _form.bind(
@@ -63,9 +68,10 @@ trait CRUDer[C <: ModelObj] extends SingletonDefiner[C] with Router.Routes {
                 badForm.errors.seq.map(err => (err.key -> ""))
                 ).fold(
                 definitiveBad => viewBadForm.apply(badForm),
-                elem => success(elem)),
-          elem => success(elem)
+                elem => success/*(elem)*/),
+          elem => success/*(elem)*/
        )}
+      }
     } 
   }
   
@@ -84,13 +90,13 @@ trait CRUDer[C <: ModelObj] extends SingletonDefiner[C] with Router.Routes {
     }
   }
   
-  def success(elem: C)(implicit request: Request[AnyContent]) = 
-		  if (!checkRemove)
-              Ok("Ok")
-          else {
-              obj.delete(elem.myId)
-              Ok("Removed")
-    }
+  def deletion(elemId: BSONObjectID)(implicit request: Request[AnyContent]) = {
+    obj.delete(elemId)
+    Ok("Removed")
+  }
+  
+  def success/*(elem: C)*/(implicit request: Request[AnyContent]) = 
+       Ok("Ok")
 
   /*
    * Routable element

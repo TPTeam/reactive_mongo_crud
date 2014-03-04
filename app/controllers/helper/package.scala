@@ -80,5 +80,18 @@ package object controllerhelper {
           } yield {
             (checko(value.toBoolean) || checko(value.equals("on")))
           }).getOrElse(false)
+          
+  def getObjectToRemove(fieldName : String = "id")(implicit request: Request[AnyContent]): Option[BSONObjectID] = 
+		  (for {
+            elems <- request.body.asFormUrlEncoded
+            values <- elems.get("remove")
+            value <- values.headOption
+            fields <- elems.get(fieldName)
+            field <- fields.headOption
+          } yield {
+            if (checko(value.toBoolean) || checko(value.equals("on")))
+              tryo{BSONObjectID.parse(field).get}
+            else None
+          }).getOrElse(None)
   
 }
