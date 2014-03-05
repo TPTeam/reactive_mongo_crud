@@ -56,6 +56,8 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
       g <- findOneById(id) 
     } yield
     {
+      if (g.isEmpty) overallBlock.trySuccess(true)
+      else {
       val sons = getSons(g.get)
       val updateSonsBlock = sons.map( _ => Promise[Boolean])
       for(s <- sons.zipWithIndex)
@@ -68,6 +70,7 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
       }yield{
     	  overallBlock.trySuccess(true)
       }	
+      }
     }
     overallBlock.future
   }
