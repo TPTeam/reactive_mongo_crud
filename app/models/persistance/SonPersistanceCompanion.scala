@@ -50,10 +50,13 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 	
 	def updateUpOnDelete(id: BSONObjectID) = {
 		val overallBlock = Promise[Boolean]
-	
+
 	    for {
 			obj <- findOneById(id)
 		} yield {
+		 if (obj.isEmpty) {
+		   overallBlock.trySuccess(true)   
+		 } else 
 		 obj.map(x => {
 		   if(getFather(x).isDefined)
 		   {
@@ -61,9 +64,11 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 		       fa <- FatherPC.findOneById(getFather(obj.get).get.id)
 		     }
 		     yield{
-		       FatherPC.removeFrom(List(new Reference[T](id)), List(fa.get))
-		     }.onComplete{
-		     	case _ => overallBlock.trySuccess(true)
+		       if (fa.isEmpty) overallBlock.trySuccess(true)
+		       else 
+		         FatherPC.removeFrom(List(new Reference[T](id)), List(fa.get)).onComplete{
+		     		case _ => overallBlock.trySuccess(true)
+		       	}
 		     }
 		   }
 		   else
@@ -84,6 +89,10 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 		}
 		yield
 		{	// update fathers updating son references
+			if (fathers.size == 0) {
+			  fathersRemoveFromBlock.trySuccess(true)
+			  fathersAddToBlock.trySuccess(true)
+			} else {
 			FatherPC.removeFrom(List(Reference[T](id)), fathers).onComplete{
 				_ => fathersRemoveFromBlock.trySuccess(true)
 			}
@@ -98,6 +107,7 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 				}
 			else
 			fathersAddToBlock.trySuccess(true)
+			}
 		}
     
 		for{
@@ -105,7 +115,7 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 			b2 <- fathersAddToBlock.future
 		}yield{
 			overallBlock.trySuccess(true)
-			}
+		}
 		overallBlock.future
 	}
 	
