@@ -64,14 +64,19 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
     
     def filt(implicit params: Map[String,Seq[String]]) =
       BSONRegex("(?i).*"+filter+".*","")
+      
+    def filterQuery(implicit params: Map[String,Seq[String]]) =
+      BSONDocument(
+          "$or" -> elemsToDisplay.map(elem => BSONDocument(elem -> filt)))
 
-    def objsWithQuery(implicit params: Map[String,Seq[String]]) =
-      obj.find(BSONDocument(
-          "$or" -> elemsToDisplay.map(elem => BSONDocument(elem -> filt))),	//filter
-          BSONDocument.apply(												//projection
+    def projectionQuery(implicit params: Map[String,Seq[String]]) =
+      BSONDocument.apply(												//projection
               for{elem <- elemsToDisplay} yield {
             	  elem -> BSONBoolean(true)
-              }))
+              })
+      
+    def objsWithQuery(implicit params: Map[String,Seq[String]]) =
+      obj.find(filterQuery, projectionQuery)
     
     import scala.language.postfixOps
     def actualPage(iTotalRecords: Int)(implicit params: Map[String,Seq[String]]) = {
@@ -93,9 +98,11 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
              */
             import Json._
             import tp_utils.Jsoner._
+            import reactivemongo.core.commands._
 
             for {
-              iTotalRecords <- singleton.count;
+              iTotalRecords <- singleton.count
+              iTotalDisplayRecords <- singleton.db.command(Count(singleton.collectionName, Some(filterQuery), None))
               ap <- actualPage(iTotalRecords).cursor[Seq[String]](SeqObjReader(elemsToDisplay), defaultContext).collect[List]()
             } yield {
             Ok(
@@ -103,7 +110,7 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
             		Seq(
             				"sEcho" -> toJsVal(sEcho),
             				"iTotalRecords" -> toJsVal(iTotalRecords),
-            				"iTotalDisplayRecords" -> toJsVal(ap.size),
+            				"iTotalDisplayRecords" -> toJsVal(iTotalDisplayRecords),
             				"aaData" -> 
             				JsArray(
             						ap.map(elem => 
