@@ -5,7 +5,7 @@ import play.Project._
 object ApplicationBuild extends Build {
 
   val appName         = "reactive_mongo_plugin"
-  val appVersion      = "0.0.13"
+  val appVersion      = "0.0.14"
 
   val appDependencies = Seq(
     "org.reactivemongo" %% "reactivemongo" % "0.10.0"
