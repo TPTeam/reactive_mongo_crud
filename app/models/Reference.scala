@@ -65,6 +65,9 @@ trait RefPersistanceCompanion[T <: ModelObj] extends SafePersistanceCompanion[T]
   
     override lazy val dbName = "vivathron"
 
+    def findOneByUniqueString(idStr: String) = findOneByIdString(idStr)  
+    def uniqueString(obj: T) = obj.id.stringify    
+      
     def update(id: BSONObjectID, obj: T) = {
       val res1 = Promise[Boolean]
       val res2 = Promise[Boolean]
