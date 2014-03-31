@@ -3,22 +3,50 @@ package models.persistance
 import models.ModelObj
 import models._
 import reactivemongo.bson.BSONObjectID
+import reactivemongo.bson.BSONDocument
 import scala.util.{Success, Failure}
 import scala.concurrent._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import scala.language.implicitConversions
 
 trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
-  self: PersistanceCompanion[T] =>  
+  self: PersistanceCompanion[T] with RefPersistanceCompanion[T]=>  
   
   val CHILD: PersistanceCompanion[R] with SonPersistanceCompanion[R,T] 
+  val sonsAttName: String
   
   def getSons(obj: T): List[Reference[R]]
   
-  def removeFrom(toBeRemoved: List[Reference[R]], from: List[T]): Future[Boolean]
-	
-  def addTo(toBeAdded: List[Reference[R]], to: T): Future[Boolean]
+  //def removeFrom(toBeRemoved: List[Reference[R]], from: List[T]): Future[Boolean]
+  def removeFrom(toBeRemoved: List[Reference[R]], from: List[Reference[T]]): Future[Boolean]
   
+  def cleanChildren(toBeRemoved: List[Reference[R]], from: List[Reference[T]]): Future[Boolean] = {
+	val r = Promise[Boolean]
+    val rIds = toBeRemoved.map(x => BSONDocument("reference_id" -> x.id))
+	val fIds = from.map(x => x.id)
+    collection.update(BSONDocument("_id" -> BSONDocument( "$in" -> fIds)), 
+                      BSONDocument("$pullAll" -> BSONDocument(sonsAttName -> rIds)),
+                      multi=true).onComplete{
+      case Success(s) => r.trySuccess(true)
+      case Failure(f) => r.trySuccess(false)
+    }
+    r.future
+  }      
+
+  //def addTo(toBeAdded: List[Reference[R]], to: T): Future[Boolean]
+  def addTo(toBeAdded: List[Reference[R]], to: Reference[T]): Future[Boolean]
+  
+  def addChildren(toBeAdded: List[Reference[R]], to: Reference[T]): Future[Boolean] = {
+    val r = Promise[Boolean]
+    val rIds = toBeAdded.map(x => BSONDocument("reference_id" -> x.id))
+    collection.update(BSONDocument("_id" -> to.id), 
+                      BSONDocument("$addToSet" -> BSONDocument(sonsAttName -> 
+                      BSONDocument("$each" -> rIds)))).onComplete{
+      case Success(s) => r.trySuccess(true)
+      case Failure(f) => r.trySuccess(false)
+    }
+    r.future
+  }
   
   def updateDownOnCreate(obj: T) = {  
     val overallBlock = Promise[Boolean]
@@ -26,10 +54,10 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
     val updateSonsBlock = getSons(obj).map( x => Promise[Boolean])
     
     for {
-      granpas <- findAll.collect[List]()
-    } yield
-    {
-    	removeFrom(getSons(obj),granpas.filterNot(x => x.id==obj.id).toList).onComplete{
+      granpas <- findAllIdsWithFilter(BSONDocument("_id" -> BSONDocument( "$nin" -> List(obj.id)))).collect[List]()
+      //granpas <- findAll.collect[List]()
+    } yield {
+    	removeFrom(getSons(obj),granpas.map(i => Reference(i))).onComplete{
     	  _ => removeFromGPBlock.trySuccess(true)
     	} 
     	getSons(obj).zipWithIndex.foreach(x => {
@@ -54,22 +82,21 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
     val overallBlock = Promise[Boolean]
     for {
       g <- findOneById(id) 
-    } yield
-    {
+    } yield {
       if (g.isEmpty) overallBlock.trySuccess(true)
       else {
-      val sons = getSons(g.get)
-      val updateSonsBlock = sons.map( _ => Promise[Boolean])
-      for(s <- sons.zipWithIndex)
-    	  CHILD.referenceChanged(None,s._1).onComplete{
-    					_ => updateSonsBlock(s._2).trySuccess(true)
-    			} 
-      val updateSonsRes = Future.fold(updateSonsBlock.map(x => x.future))(true)((i, l) => l)
-      for{
-     	x <- updateSonsRes
-      }yield{
-    	  overallBlock.trySuccess(true)
-      }	
+    	  val sons = getSons(g.get)
+    	  val updateSonsBlock = sons.map( _ => Promise[Boolean])
+    	  for(s <- sons.zipWithIndex)
+    		  CHILD.referenceChanged(None,s._1).onComplete{
+    		  	_ => updateSonsBlock(s._2).trySuccess(true)
+    		  } 
+    	  val updateSonsRes = Future.fold(updateSonsBlock.map(x => x.future))(true)((i, l) => l)
+    	  for{
+    		  x <- updateSonsRes
+    	  }yield{
+    		  overallBlock.trySuccess(true)
+    	  }	
       }
     }
     overallBlock.future
@@ -82,9 +109,10 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
     val updateFathersBlock = Promise[Boolean]
     
     for {
-      granpas <- findAll.collect[List]()
+      granpas <- findAllIdsWithFilter(BSONDocument("_id" -> BSONDocument( "$nin" -> List(obj.id)))).collect[List]()
+      //granpas <- findAll.collect[List]()
     } yield{ // remove the new granpa sons from the other granpas
-    	removeFrom(getSons(obj), granpas.filterNot(x => x.id==obj.id).toList).onComplete{
+    	removeFrom(getSons(obj), granpas.map(i => Reference(i))).onComplete{
     	  _ => removeFromGPBlock.trySuccess(true)
     	} 
     	
@@ -92,7 +120,7 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
     		gp <- findOneById(id)
     	} yield {
     		val olds = getSons(gp.get)
-    		val news = getSons(obj)
+    		val news = getSons(obj)																																																																																																										
     		val oldsForBlock = olds.map( _ => Promise[Boolean] )
     		val newsForBlock = news.map( _ => Promise[Boolean] )
     		
