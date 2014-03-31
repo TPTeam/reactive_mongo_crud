@@ -3,6 +3,7 @@ package models.persistance
 import reactivemongo.api._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import com.typesafe.config._
+import akka.actor.ActorSystem
 
 object MongoDBsConnector {
   
@@ -41,5 +42,16 @@ object MongoDBsConnector {
     }
     _cropIt(List())
   }
+
+}
+
+object ReactiveMongoActorSystem {
+  
+    val config = ConfigFactory.load("actors.conf")
+    
+    val systemName = config.getString("actors-system")
+  
+    lazy val system = ActorSystem(systemName, config.getConfig(systemName))
+
 
 }

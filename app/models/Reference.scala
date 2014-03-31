@@ -61,7 +61,7 @@ trait ReferenceJSONer[A <: ModelObj] {
 }
 
 
-trait RefPersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T]{
+trait RefPersistanceCompanion[T <: ModelObj] extends SafePersistanceCompanion[T]{
   
     override lazy val dbName = "vivathron"
 
