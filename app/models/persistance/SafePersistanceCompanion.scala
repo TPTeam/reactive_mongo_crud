@@ -20,7 +20,7 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
     def uniqueId(obj: T): BSONObjectID =
       obj.id
     
-    lazy val actor = system.actorOf(Props(CollectionManager()),collectionName+"Manager")
+    lazy val actor = system.actorOf(Props(CollectionManager()),me.dbName+collectionName+"Manager")
       
      /*
      * CREATE -> executed only once
@@ -176,6 +176,8 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
         else {
         	if (os.headOption.isDefined)
         		self ! DoNextOn(os.head.getProp, BSONObjectID.generate)
+        	else
+        		self ! DoNextOn(prop, BSONObjectID.generate)
         		
             running + (prop -> os)
         }
@@ -192,31 +194,31 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
     
 }
 
-   override def _create(obj: T) = {
+   def _create(obj: T) = {
      val result = Promise[Boolean]
-     println("SafePC "+collectionName+" => _create")
+     //println("SafePC "+collectionName+" => _create")
      actor ! new Create(obj)(result)
      result.future.map(res => if (res) Some(obj) else None)    
    }
 
    protected def _createPC(obj: T) = {
-     super._create(obj)
+     originalCreate(obj)
    }
   
-  override def _update(id: BSONObjectID,obj: T): Future[Option[T]] = {
+  def _update(id: BSONObjectID,obj: T): Future[Option[T]] = {
     val result = Promise[Boolean]
-    println("SafePC "+collectionName+" => _update")
+    //println("SafePC "+collectionName+" => _update")
     actor ! new Update((id,obj))(result)
     result.future.map(res => if (res) Some(obj) else None)
   }
   
   protected def _updatePC(id: BSONObjectID,obj: T) = {
-    super._update(id,obj)
+    originalUpdate(id,obj)
   }
   
-  override def _delete(id: BSONObjectID): Future[Boolean] = {
+  def _delete(id: BSONObjectID): Future[Boolean] = {
     val result = Promise[Boolean]
-    println("SafePC "+collectionName+" => _delete")
+    //println("SafePC "+collectionName+" => _delete")
     for{
       obj <- findOneById(id)
     }yield{
@@ -229,7 +231,7 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
   }
   
   protected def _deletePC(id: BSONObjectID) = {
-    super._delete(id)
+    originalDelete(id)
   }
   
 }

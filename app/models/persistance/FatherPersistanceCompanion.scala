@@ -10,7 +10,7 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import scala.language.implicitConversions
 
 trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
-  self: PersistanceCompanion[T] with RefPersistanceCompanion[T]=>  
+  self: RefPersistanceCompanion[T]=>  
   
   val CHILD: PersistanceCompanion[R] with SonPersistanceCompanion[R,T] 
   val sonsAttName: String

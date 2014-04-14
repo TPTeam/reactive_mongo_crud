@@ -18,7 +18,7 @@ import models.RefPersistanceCompanion
 
 
 trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
-	self: PersistanceCompanion[T] with RefPersistanceCompanion[T] =>
+	self: RefPersistanceCompanion[T] =>
 		  
 	type FATHER = PersistanceCompanion[R] with FatherPersistanceCompanion[R,T]   
 	

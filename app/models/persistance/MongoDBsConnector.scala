@@ -47,7 +47,7 @@ object MongoDBsConnector {
 
 object ReactiveMongoActorSystem {
   
-    val config = ConfigFactory.load("actors.conf")
+    val config = ConfigFactory.load("reactive_actors.conf")
     
     val systemName = config.getString("actors-system")
   

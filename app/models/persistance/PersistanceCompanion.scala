@@ -33,7 +33,7 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
   implicit val writer: BSONDocumentWriter[T]
  
   
-  protected def _create(obj: T) = {
+  protected def originalCreate(obj: T) = {
     val result = collection.save(obj)
     for (
         ret <- result
@@ -47,7 +47,7 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
   }
  
   
-  protected def _update(id: BSONObjectID,obj: T) = {
+  protected def originalUpdate(id: BSONObjectID,obj: T) = {
     val res = Promise[Option[T]]
     val result = collection.update(BSONDocument("_id" -> id), obj)
     
@@ -66,7 +66,7 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
   }
  
   
-  def _delete(id: BSONObjectID) = {
+  def originalDelete(id: BSONObjectID) = {
     val result = 
     		collection.remove(BSONDocument("_id" -> id))
     for (
