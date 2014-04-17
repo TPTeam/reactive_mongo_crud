@@ -111,6 +111,10 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
     }
   }   
   
+  def findAllIdAndField(str: String) = collection.find(BSONDocument(),BSONDocument("_id" -> 1, str -> 1)).cursor(idStringReader(str), defaultContext)
+  
+  def findOneIdAndField(id: BSONObjectID,str: String) = collection.find(BSONDocument("_id" -> id),BSONDocument("_id" -> 1, str -> 1)).cursor(idStringReader(str), defaultContext).headOption(defaultContext)
+  
   def findAllIds = collection.find(BSONDocument(), BSONDocument("_id" -> 1)).cursor(IdBSONReader, defaultContext)
 
   def findAllIdsWithFilter(filter: BSONDocument) = collection.find(filter, BSONDocument("_id" -> 1)).cursor(IdBSONReader, defaultContext)

@@ -27,6 +27,14 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 	
 	def getFather(obj: T): Option[Reference[R]]	
 	
+	def findByFatherReference(fRef: Reference[R]) = {
+     collection.find(BSONDocument(
+          fatherAttName -> BSONDocument(
+              "reference_id" -> fRef.id
+              )
+          ), BSONDocument("id" -> 1 , "name" -> 1)).cursor(idStringReader("name"), defaultContext)
+    }
+	
 	def updateFather(rel: Reference[T], gp: Reference[R]): Future[Boolean] = {
 	  val r = Promise[Boolean]
 	  collection.update(BSONDocument("_id" -> rel.id), 
