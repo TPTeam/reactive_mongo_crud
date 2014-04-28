@@ -35,7 +35,7 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
           ), BSONDocument("id" -> 1 , "name" -> 1)).cursor(idStringReader("name"), defaultContext)
     }
 	
-	def updateFather(rel: Reference[T], gp: Reference[R]): Future[Boolean] = {
+	protected[models] def updateFather(rel: Reference[T], gp: Reference[R]): Future[Boolean] = {
 	  val r = Promise[Boolean]
 	  collection.update(BSONDocument("_id" -> rel.id), 
                       BSONDocument("$set" -> BSONDocument(fatherAttName -> 
@@ -47,7 +47,7 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 	}
 
 	
-	def referenceChanged(ogp: Option[Reference[R]],rel: Reference[T]): Future[Boolean]
+	protected[models] def referenceChanged(ogp: Option[Reference[R]],rel: Reference[T]): Future[Boolean]
 	  
 	def FatherReferenceReader(field: String) = 
 	  new BSONDocumentReader[Reference[R]] {
@@ -56,7 +56,7 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 		}
 	  }
 	
-	def updateUpOnCreate(obj: T) = {
+	private[models] def updateUpOnCreate(obj: T) = {
 		val overallBlock = Promise[Boolean]
 		if (getFather(obj).isDefined)
 			for {
@@ -72,7 +72,7 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 	}
 	
 	
-	def updateUpOnDelete(id: BSONObjectID) = {
+	private[models] def updateUpOnDelete(id: BSONObjectID) = {
 		val overallBlock = Promise[Boolean]
 
 	    for {
@@ -103,7 +103,7 @@ trait SonPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
 	}
 	
 	
-	def updateUpOnUpdate(id: BSONObjectID, obj: T) = {
+	private[models] def updateUpOnUpdate(id: BSONObjectID, obj: T) = {
 		val fathersRemoveFromBlock = Promise[Boolean]
 		val fathersAddToBlock = Promise[Boolean]
 		val overallBlock = Promise[Boolean]

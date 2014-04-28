@@ -66,7 +66,7 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
   }
  
   
-  def originalDelete(id: BSONObjectID) = {
+  protected def originalDelete(id: BSONObjectID) = {
     val result = 
     		collection.remove(BSONDocument("_id" -> id))
     for (
