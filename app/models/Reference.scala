@@ -10,13 +10,14 @@ import scala.util.Failure
 import models.persistance.PersistanceCompanion
 import play.api.Logger._
 
-case class Reference[T <: ModelObj](id: BSONObjectID)(implicit resolver: PersistanceCompanion[T]) {
+case class Reference[+T <: ModelObj](id: BSONObjectID)(implicit resolver: PersistanceCompanion[T]) {
   
   def resolve =
     resolver.findOneById(id)
     
+  def mySingleton: PersistanceCompanion[_] = resolver
+    
 }
-
 
 trait ReferenceJSONer[A <: ModelObj] {
   self: PersistanceCompanion[A] =>
@@ -65,6 +66,9 @@ trait RefPersistanceCompanion[T <: ModelObj] extends SafePersistanceCompanion[T]
   
     override lazy val dbName = "vivathron"
 
+    //def findOneByUniqueString(idStr: String) = findOneByIdString(idStr)  
+    //def uniqueString(obj: T) = obj.id.stringify    
+      
     def update(id: BSONObjectID, obj: T) = {
       val res1 = Promise[Boolean]
       val res2 = Promise[Boolean]

@@ -10,7 +10,7 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import scala.language.implicitConversions
 
 trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
-  self: PersistanceCompanion[T] with RefPersistanceCompanion[T]=>  
+  self: RefPersistanceCompanion[T]=>  
   
   val CHILD: PersistanceCompanion[R] with SonPersistanceCompanion[R,T] 
   val sonsAttName: String
@@ -18,9 +18,9 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
   def getSons(obj: T): List[Reference[R]]
   
   //def removeFrom(toBeRemoved: List[Reference[R]], from: List[T]): Future[Boolean]
-  def removeFrom(toBeRemoved: List[Reference[R]], from: List[Reference[T]]): Future[Boolean]
+  protected[models] def removeFrom(toBeRemoved: List[Reference[R]], from: List[Reference[T]]): Future[Boolean]
   
-  def cleanChildren(toBeRemoved: List[Reference[R]], from: List[Reference[T]]): Future[Boolean] = {
+  protected[models] def cleanChildren(toBeRemoved: List[Reference[R]], from: List[Reference[T]]): Future[Boolean] = {
 	val r = Promise[Boolean]
     val rIds = toBeRemoved.map(x => BSONDocument("reference_id" -> x.id))
 	val fIds = from.map(x => x.id)
@@ -34,9 +34,9 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
   }      
 
   //def addTo(toBeAdded: List[Reference[R]], to: T): Future[Boolean]
-  def addTo(toBeAdded: List[Reference[R]], to: Reference[T]): Future[Boolean]
+  protected[models] def addTo(toBeAdded: List[Reference[R]], to: Reference[T]): Future[Boolean]
   
-  def addChildren(toBeAdded: List[Reference[R]], to: Reference[T]): Future[Boolean] = {
+  protected[models] def addChildren(toBeAdded: List[Reference[R]], to: Reference[T]): Future[Boolean] = {
     val r = Promise[Boolean]
     val rIds = toBeAdded.map(x => BSONDocument("reference_id" -> x.id))
     collection.update(BSONDocument("_id" -> to.id), 
@@ -48,7 +48,7 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
     r.future
   }
   
-  def updateDownOnCreate(obj: T) = {  
+  private[models] def updateDownOnCreate(obj: T) = {  
     val overallBlock = Promise[Boolean]
     val removeFromGPBlock = Promise[Boolean]
     val updateSonsBlock = getSons(obj).map( x => Promise[Boolean])
@@ -77,7 +77,7 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
   }
   
   
-  def updateDownOnDelete(id: BSONObjectID) = {
+  private[models] def updateDownOnDelete(id: BSONObjectID) = {
         
     val overallBlock = Promise[Boolean]
     for {
@@ -103,7 +103,7 @@ trait FatherPersistanceCompanion[T <: ModelObj, R <: ModelObj] {
   }
     
   
-  def updateDownOnUpdate(id: BSONObjectID, obj: T) = {
+  private[models] def updateDownOnUpdate(id: BSONObjectID, obj: T) = {
     val overallBlock = Promise[Boolean]
     val removeFromGPBlock = Promise[Boolean]
     val updateFathersBlock = Promise[Boolean]

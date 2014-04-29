@@ -14,18 +14,20 @@ import models.persistance.ReactiveMongoActorSystem._
 
 trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
   me =>    
-    def findOneByUniqueString(str: String): Future[Option[T]]
+    def findOneByUniqueId(id: BSONObjectID): Future[Option[T]] =
+      findOneById(id)
     
-    def uniqueString(obj: T): String 
+    def uniqueId(obj: T): BSONObjectID =
+      obj.id
     
-    lazy val actor = system.actorOf(Props(CollectionManager()),collectionName+"Manager")
+    lazy val actor = system.actorOf(Props(CollectionManager()),me.dbName+collectionName+"Manager")
       
      /*
      * CREATE -> executed only once
      * UPDATE -> sequentially applied
      * DELETE -> executed next and remove the queue --> now not used and only partial implementation
      */
-    abstract class Operation(prop: String, result: Promise[Boolean]) {
+    abstract class Operation(prop: BSONObjectID, result: Promise[Boolean]) {
       val uuid = BSONObjectID.generate
       
       val getProp = prop
@@ -39,10 +41,10 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
       def postFailure(): Unit = {}
     }
  
-    class Create(prop: String, obj: T)(result: Promise[Boolean]) extends Operation(prop, result) {
+    class Create(obj: T)(result: Promise[Boolean]) extends Operation(obj.id, result) {
       def execute(implicit self: ActorRef): Future[Boolean] = {
              for (
-                it <- me.findOneByUniqueString(prop)
+                it <- me.findOneByUniqueId(obj.id)
                 ) {
               it match {
               case None =>
@@ -74,10 +76,10 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
       }
     }
     
-    class Update(prop: String, params: Tuple2[BSONObjectID, T])(result: Promise[Boolean]) extends Operation(prop,result) {
+    class Update(params: Tuple2[BSONObjectID, T])(result: Promise[Boolean]) extends Operation(params._1,result) {
       def execute(implicit self: ActorRef): Future[Boolean] = {
              for (
-                it <- me.findOneByUniqueString(prop)
+                it <- me.findOneByUniqueId(params._1)
                 ) {
               it match {
               case Some(_) =>
@@ -102,7 +104,7 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
       }
     }
     
-    class Delete(prop: String, id: BSONObjectID)(result: Promise[Boolean]) extends Operation(prop, result) {
+    class Delete(id: BSONObjectID)(result: Promise[Boolean]) extends Operation(id, result) {
       def execute(implicit self: ActorRef): Future[Boolean] = {
               	me._deletePC(id) onComplete { 
               	  case Success(ok) =>
@@ -119,8 +121,7 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
       }
     }
     
-    sealed case class DoNextOn(prop: String, uuid: BSONObjectID)
-    
+    sealed case class DoNextOn(prop: BSONObjectID, uuid: BSONObjectID)
     
     case class CollectionManager() extends Actor {
       
@@ -129,32 +130,25 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
     }
     
     import scala.util.{Failure, Success}
-    def operative(running: Map[String , List[Operation]]): Receive = {
+    def operative(running: Map[BSONObjectID , List[Operation]]): Receive = {
 
        case DoNextOn(prop,uuid) => {
+          val newrunning = 
       		running.map(o =>
-      		  if (o._1.equals(prop)) {
-      		    val op = o._2.filter(e => e.uuid==uuid)
+      		  if (o._1 == prop) {
       		    val nexts = o._2.filterNot(e => e.uuid==uuid)
-      		    if(op.size==0)
-      		    	println("SafePC "+collectionName+" => DoNextOn: cannot execute "+o._2+" because it doesn't exist...")
-      		    else
-      		      op.headOption.map(op => {
-      		        op.execute onComplete {
-      		          case _ => {
-      		            context.become(operative(updateOperations(running)(o._1,nexts)), true)
-      		            if(nexts.size>0)
-      		            	nexts.headOption.map(o => self ! DoNextOn(o.getProp, o.uuid))
-      		            else
-      		            	println("SafePC "+collectionName+" => DoNextOn: done!")
-      		          }
-      		        }
-      		      }
+      		    nexts.headOption.map(o => {
+      		        o.execute onComplete { 
+      		          case _ => 
+      		            self ! DoNextOn(o.getProp, o.uuid)
+      		        }}
       		    )
+      		    prop -> nexts
       		  }
-      		  else
-      		    println("SafePC "+collectionName+" => DoNextOn: not existent prop...")
-      	   )
+      		  else o)
+         val newrunningOptimized = 
+           newrunning.filter(x => !x._2.isEmpty)
+      	 context.become(operative(newrunningOptimized), true)
       }		  
       case o: Operation => {
         val newoperations =
@@ -167,13 +161,13 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
       }
     }
     
-    def addOperation(running: Map[String , List[Operation]])(prop: String, os: List[Operation]) = {
+    def addOperation(running: Map[BSONObjectID , List[Operation]])(prop: BSONObjectID, os: List[Operation]) = {
         if (running.contains(prop)) {
             running.map(p =>
             if (p._1.equals(prop))
             {
               if (p._2.isEmpty && os.headOption.isDefined) 
-                self ! DoNextOn(os.head.getProp, os.head.uuid)
+                self ! DoNextOn(os.head.getProp, BSONObjectID.generate)
                 
               prop -> os
             } else p
@@ -181,7 +175,9 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
         }
         else {
         	if (os.headOption.isDefined)
-        		self ! DoNextOn(os.head.getProp, os.head.uuid)
+        		self ! DoNextOn(os.head.getProp, BSONObjectID.generate)
+        	else
+        		self ! DoNextOn(prop, BSONObjectID.generate)
         		
             running + (prop -> os)
         }
@@ -198,36 +194,36 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
     
 }
 
-   override def _create(obj: T) = {
+   def _create(obj: T) = {
      val result = Promise[Boolean]
-     println("SafePC "+collectionName+" => _create")
-     actor ! new Create(uniqueString(obj),obj)(result)
+     //println("SafePC "+collectionName+" => _create")
+     actor ! new Create(obj)(result)
      result.future.map(res => if (res) Some(obj) else None)    
    }
 
    protected def _createPC(obj: T) = {
-     super._create(obj)
+     originalCreate(obj)
    }
   
-  override def _update(id: BSONObjectID,obj: T): Future[Option[T]] = {
+  def _update(id: BSONObjectID,obj: T): Future[Option[T]] = {
     val result = Promise[Boolean]
-    println("SafePC "+collectionName+" => _update")
-    actor ! new Update(uniqueString(obj),(id,obj))(result)
+    //println("SafePC "+collectionName+" => _update")
+    actor ! new Update((id,obj))(result)
     result.future.map(res => if (res) Some(obj) else None)
   }
   
   protected def _updatePC(id: BSONObjectID,obj: T) = {
-    super._update(id,obj)
+    originalUpdate(id,obj)
   }
   
-  override def _delete(id: BSONObjectID): Future[Boolean] = {
+  def _delete(id: BSONObjectID): Future[Boolean] = {
     val result = Promise[Boolean]
-    println("SafePC "+collectionName+" => _delete")
+    //println("SafePC "+collectionName+" => _delete")
     for{
       obj <- findOneById(id)
     }yield{
       if(obj.isDefined)
-    	  actor ! new Delete(uniqueString(obj.get),id)(result)
+    	  actor ! new Delete(id)(result)
       else
           println("SafePC "+collectionName+" => element to delete not found")
     }
@@ -235,7 +231,7 @@ trait SafePersistanceCompanion[T <: ModelObj] extends PersistanceCompanion[T] {
   }
   
   protected def _deletePC(id: BSONObjectID) = {
-    super._delete(id)
+    originalDelete(id)
   }
   
 }
