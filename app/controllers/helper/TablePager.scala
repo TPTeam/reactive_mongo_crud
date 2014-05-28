@@ -90,6 +90,9 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
             				  }
             		  ))
     }
+	def actualPageResult(iTotalRecords: Int)(implicit params: Map[String,Seq[String]]): Future[List[Seq[String]]] =
+	  actualPage(iTotalRecords).cursor[Seq[String]](SeqObjReader(elemsToDisplay), defaultContext).collect[List]()
+	
     def table = Action.async { implicit request ⇒
         implicit val params = request.queryString
         
@@ -103,7 +106,7 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
             for {
               iTotalRecords <- singleton.count
               iTotalDisplayRecords <- singleton.db.command(Count(singleton.collectionName, Some(filterQuery), None))
-              ap <- actualPage(iTotalRecords).cursor[Seq[String]](SeqObjReader(elemsToDisplay), defaultContext).collect[List]()
+              ap <- actualPageResult(iTotalRecords)
             } yield {
             Ok(
             JsObject(
