@@ -90,6 +90,16 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
             				  }
             		  ))
     }
+	def actualPageResult(iTotalRecords: Int)(implicit params: Map[String,Seq[String]]): Future[List[Seq[String]]] =
+	  actualPage(iTotalRecords).cursor[Seq[String]](SeqObjReader(elemsToDisplay), defaultContext).collect[List]()
+	
+	import reactivemongo.core.commands._
+	def iTotalRecordsResult =
+	  singleton.count
+	  
+	def iTotalDisplayRecordsResult(implicit params: Map[String,Seq[String]]) =
+	  singleton.db.command(Count(singleton.collectionName, Some(filterQuery), None))
+	  
     def table = Action.async { implicit request ⇒
         implicit val params = request.queryString
         
@@ -98,12 +108,11 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
              */
             import Json._
             import tp_utils.Jsoner._
-            import reactivemongo.core.commands._
 
             for {
-              iTotalRecords <- singleton.count
-              iTotalDisplayRecords <- singleton.db.command(Count(singleton.collectionName, Some(filterQuery), None))
-              ap <- actualPage(iTotalRecords).cursor[Seq[String]](SeqObjReader(elemsToDisplay), defaultContext).collect[List]()
+              iTotalRecords <- iTotalRecordsResult
+              iTotalDisplayRecords <- iTotalDisplayRecordsResult
+              ap <- actualPageResult(iTotalRecords)
             } yield {
             Ok(
             JsObject(
