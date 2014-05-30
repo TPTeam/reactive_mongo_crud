@@ -54,7 +54,7 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
       if (params.get("sSortDir_0").getOrElse(Seq("asc")).head.compareTo("desc")==0)
     				-1 else 1
     def sortCol(implicit params: Map[String,Seq[String]]) =
-      params.get("sSortCol_0").getOrElse(Seq("asc")).head
+      params.get("iSortCol_0").getOrElse(Seq("0")).head
     
     def sEcho(implicit params: Map[String,Seq[String]]) =
       Integer.valueOf(params.get("sEcho").getOrElse(Seq("0")).head)
