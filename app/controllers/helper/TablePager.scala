@@ -47,9 +47,11 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
     def pageSize(implicit params: Map[String,Seq[String]]) =
       	Integer.valueOf(params.get("iDisplayLength")
     				.getOrElse(Seq(""+defaultDisplayLenth)).head)
-    def page(implicit params: Map[String,Seq[String]]) =
-        Integer.valueOf(params.get("iDisplayStart")
-    			.getOrElse(Seq("0")).head) / pageSize
+    def page(implicit params: Map[String,Seq[String]]) = 
+      	if (pageSize > 0)
+	        Integer.valueOf(params.get("iDisplayStart")
+	    			.getOrElse(Seq("0")).head) / pageSize
+	    else 0
     def order(implicit params: Map[String,Seq[String]]) = 
       if (params.get("sSortDir_0").getOrElse(Seq("asc")).head.compareTo("desc")==0)
     				-1 else 1
