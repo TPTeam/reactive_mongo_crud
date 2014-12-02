@@ -53,17 +53,17 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
   }
 
   def sortBy(implicit params: Map[String, Seq[String]]) = {
-    pagerLog(s"sortBy		${sortCol.toInt}		${defaultSortBy}")
+//    pagerLog(s"sortBy		${sortCol.toInt}		${defaultSortBy}")
     tryo(elemsToDisplay(sortCol.toInt)).getOrElse(defaultSortBy)
   }
 
   def filter(implicit params: Map[String, Seq[String]]) = {
-    pagerLog(s"filter		${params.get("sSearch")}")
+//    pagerLog(s"filter		${params.get("sSearch")}")
     params.get("sSearch").getOrElse(Seq("")).head
   }
 
   def pageSize(implicit params: Map[String, Seq[String]]): Int = {
-    pagerLog(s"pageSize		${params}")
+//    pagerLog(s"pageSize		${params}")
     val size: Int = params.get("iDisplayLength") match {
       case Some(data) =>
         (try {
@@ -90,12 +90,12 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
         defaultDisplayLength
       }
     }
-    pagerLog(s"pageSize	is	${size}")
+//    pagerLog(s"pageSize	is	${size}")
     size
   }
   
   def page(implicit params: Map[String, Seq[String]]): Int = {
-	pagerLog(s"page	with	${params}")
+//	pagerLog(s"page	with	${params}")
     if (pageSize > 0) {
       Integer.valueOf(params.get("iDisplayStart")
         .getOrElse(Seq("0")).head) / pageSize
