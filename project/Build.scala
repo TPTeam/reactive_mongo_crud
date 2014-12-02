@@ -5,11 +5,11 @@ import play.Project._
 object ApplicationBuild extends Build {
 
   val appName         = "reactive_mongo_plugin"
-  val appVersion      = "0.0.31"
+  val appVersion      = "0.0.39"
 
   val appDependencies = Seq(
     "com.typesafe.akka" %% "akka-remote" % "2.2.3",  
-    "org.reactivemongo" %% "reactivemongo" % "0.10.0"
+    "org.reactivemongo" %% "reactivemongo" % "0.10.0" //"0.10.5.0.akka22"
   )
 
 

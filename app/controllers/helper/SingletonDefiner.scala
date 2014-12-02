@@ -1,4 +1,4 @@
-package controllers
+package controllers.helper
 
 trait SingletonDefiner[C <: models.ModelObj] {
 	

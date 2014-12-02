@@ -1,4 +1,4 @@
-package controllers
+package controllers.helper
 
 import play.api.mvc._
 import play.api.libs.concurrent._
@@ -11,7 +11,7 @@ import play.api.libs.json._
 import Json._
 import play.api.data._
 import models._
-import controllerhelper._
+import controllers.controllerhelper._
 import play.core._
 import scala.concurrent._
 import reactivemongo.bson._
