@@ -17,11 +17,13 @@ import reactivemongo.api._
 trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
   self: Controller =>
 
-  val pagerLogVerbose = true
+  val pagerLogVerbose = false
 
   def pagerLog(msg: String) = if (pagerLogVerbose) play.api.Logger.debug(s"[TablePager] : ${msg}")
 
   val elemsToDisplay = Seq("id")
+  
+  val elemsToFilter: Seq[String] = Seq()
 
   def elemReader(keys: Seq[String])(doc: BSONDocument): Seq[String] = {
     pagerLog(s"elemReader ${keys}")
@@ -121,14 +123,11 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
       BSONRegex("(?i).*"+filter+".*","")
 
     def filterQuery(implicit params: Map[String,Seq[String]]) = {
-
-	    val elemsForFilter = elemsToDisplay.filterNot(_ == "id")
-	
-	    if (elemsForFilter.isEmpty) {
+	    if (elemsToFilter.isEmpty) {
 	      BSONDocument()
 	    } else {
 	      BSONDocument(
-	    		  "$or" -> elemsToDisplay.map(elem => BSONDocument(elem -> filt)))
+	    		  "$or" -> elemsToFilter.map(elem => BSONDocument(elem -> filt)))
 	    }
     }
 
