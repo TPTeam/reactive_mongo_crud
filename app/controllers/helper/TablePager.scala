@@ -119,10 +119,18 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
     
     def filt(implicit params: Map[String,Seq[String]]) =
       BSONRegex("(?i).*"+filter+".*","")
-      
-    def filterQuery(implicit params: Map[String,Seq[String]]) =
-      BSONDocument(
-          "$or" -> elemsToDisplay.map(elem => BSONDocument(elem -> filt)))
+
+    def filterQuery(implicit params: Map[String,Seq[String]]) = {
+
+	    val elemsForFilter = elemsToDisplay.filterNot(_ == "id")
+	
+	    if (elemsForFilter.isEmpty) {
+	      BSONDocument()
+	    } else {
+	      BSONDocument(
+	    		  "$or" -> elemsToDisplay.map(elem => BSONDocument(elem -> filt)))
+	    }
+    }
 
     def projectionQuery(implicit params: Map[String,Seq[String]]) =
       BSONDocument.apply(												//projection
@@ -145,6 +153,7 @@ trait TablePager[C <: ModelObj] extends SingletonDefiner[C] {
             				  }
             		  ))
     }
+    
 	def actualPageResult(iTotalRecords: Int)(implicit params: Map[String,Seq[String]]): Future[List[Seq[String]]] =
 	  actualPage(iTotalRecords).cursor[Seq[String]](SeqObjReader(elemsToDisplay), defaultContext).collect[List]()
 	
