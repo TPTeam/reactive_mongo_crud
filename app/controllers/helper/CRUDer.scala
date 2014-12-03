@@ -39,17 +39,20 @@ trait CRUDer[C <: ModelObj] extends SingletonDefiner[C] with Router.Routes {
       	viewCreateForm.apply(createForm)
   }
 
-  def edit(id: String): EssentialAction = Action.async { 
+  def edit(id: String): EssentialAction = Action.async {
     implicit request =>
-      for {
-        o <- obj.findOneById(new BSONObjectID(id)) 
-      } yield
-      (o) match {
-      	case Some(elem) =>
-      	  viewEditForm.apply(editForm(elem))
-      	case _ =>
-      	  Ok("Cannot edit undefined object")
-  	}
+      BSONObjectID.parse(id).toOption match {
+        case Some(oid) =>
+          for {
+            o <- obj.findOneById(oid)
+          } yield (o) match {
+            case Some(elem) =>
+              viewEditForm.apply(editForm(elem))
+            case _ =>
+              Ok("Cannot edit undefined object")
+          }
+        case _ => throw new Error(s"[ReactiveMongoPlugin] : invalid object ID for CRUDer.edit ${id}")
+      }
   }
   
   private val _formObjectID = "id"

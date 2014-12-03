@@ -47,19 +47,19 @@ package object controllerhelper {
 	    	}
 	    )
   	}
-  
-    
+
   //TO verify
   implicit def fromMappingToVerifiedIdOption(x: Mapping[String]) =
     new {
-	  def verifyOptId:  play.api.data.Mapping[String] =
-	    x.verifying(id => {
-	     if (id.trim.equals(""))
-	       true
-	     else
-	       checko({new BSONObjectID(id);true})
-	    })
-  	}
+      def verifyOptId: play.api.data.Mapping[String] =
+        x.verifying(id => {
+          BSONObjectID.parse(id).toOption match {
+            case Some(oid) =>
+              true
+            case _ => false
+          }
+        })
+    }
   
   implicit def fromMappingToVerifiedJson(x: Mapping[String]) =
     new {

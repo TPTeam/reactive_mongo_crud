@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.Failure
 import scala.concurrent.Promise
+import scala.concurrent.Future
 
 /** MongoDb collection operation wrapper  
  *
@@ -92,7 +93,12 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
   }
   
   def findOneByIdString(id: String) = {
-    collection.find(BSONDocument("_id" -> new BSONObjectID(id))).one[T]
+    BSONObjectID.parse(id).toOption match {
+      case Some(oid) => 
+        collection.find(BSONDocument("_id" -> oid)).one[T]
+      case _ =>
+        Future.successful(None)
+    }
   }
   
   def findAll = {
@@ -125,7 +131,7 @@ trait PersistanceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
     
   def findByAttName(attName: String, attValue: String) = {
     (attName,attValue) match {
-      case ("_id",_) => collection.find(BSONDocument("_id" -> new BSONObjectID(attValue))).cursor[T]
+      case ("_id",_) => findOneByIdString(attValue)
       case _ => collection.find(BSONDocument(attName -> attValue)).cursor[T]
     }
   }    
