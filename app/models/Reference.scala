@@ -1,35 +1,35 @@
 package models
 
-import models.persistance._
+import models.persistence._
 import reactivemongo.bson._
 import scala.concurrent._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import scala.language.implicitConversions
 import scala.util.Success
 import scala.util.Failure
-import models.persistance.PersistanceCompanion
+import models.persistence.PersistenceCompanion
 import play.api.Logger._
 
-case class Reference[+T <: ModelObj](id: BSONObjectID)(implicit resolver: PersistanceCompanion[T]) {
-  
+case class Reference[+T <: ModelObj](id: BSONObjectID)(implicit resolver: PersistenceCompanion[T]) {
+
   def resolve =
     resolver.findOneById(id)
-    
-  def mySingleton: PersistanceCompanion[_] = resolver
-    
+
+  def mySingleton: PersistenceCompanion[_] = resolver
+
 }
 
 trait ReferenceJSONer[A <: ModelObj] {
-  self: PersistanceCompanion[A] =>
-  
+  self: PersistenceCompanion[A] =>
+
   implicit val resolver = self
-  
+
   implicit object ReferenceReader extends BSONDocumentReader[Reference[A]] {
     def read(doc: BSONDocument): Reference[A] =
       Reference(
         doc.getAs[BSONObjectID]("reference_id").get
       )
-      
+
   }
 
   implicit object ReferenceWriter extends BSONDocumentWriter[Reference[A]] {
@@ -38,7 +38,7 @@ trait ReferenceJSONer[A <: ModelObj] {
         "reference_id" -> reference.id
       )
   }
-  
+
   // MapReader & MapWriter
   implicit def MapReferenceReader[V](implicit vr: BSONDocumentReader[V]): BSONDocumentReader[Map[String, V]] = new BSONDocumentReader[Map[String, V]] {
     def read(bson: BSONDocument): Map[String, V] = {
@@ -58,129 +58,129 @@ trait ReferenceJSONer[A <: ModelObj] {
       BSONDocument(elements)
     }
   }
-  
+
 }
 
 
-trait RefPersistanceCompanion[T <: ModelObj] extends SafePersistanceCompanion[T]{
-  
-    override lazy val dbName = "vivathron"
+trait RefPersistenceCompanion[T <: ModelObj] extends SafePersistenceCompanion[T]{
 
-    //def findOneByUniqueString(idStr: String) = findOneByIdString(idStr)  
-    //def uniqueString(obj: T) = obj.id.stringify    
-      
-    def update(id: BSONObjectID, obj: T) = {
-      val res1 = Promise[Boolean]
-      val res2 = Promise[Boolean]
-      val globalRes = Promise[Option[T]]
-      
-      (this) match {
-        case me : SonPersistanceCompanion[T, _] => {
-        	  me.updateUpOnUpdate(id,obj).onComplete{
-        	    _ => res1.trySuccess(true)
-        	  }
-        	}
-        case _ =>
-          res1.trySuccess(true)
-      }
-      (this) match {
-        case me : FatherPersistanceCompanion[T, _] => {
-          me.updateDownOnUpdate(id,obj).onComplete{
-        	    _ => res2.trySuccess(true)
-        	  }
-        }
-        case _ =>
-          res2.trySuccess(true)
-      }
-      
-      for {
-        r1 <- res1.future
-        r2 <- res2.future
-      } yield {
-        this._update(id, obj).onComplete
-        {
-          case Success(s) => globalRes.success(s)
-          case Failure(f) => globalRes.failure(f)
+  override lazy val dbName = "vivathron"
+
+  //def findOneByUniqueString(idStr: String) = findOneByIdString(idStr)
+  //def uniqueString(obj: T) = obj.id.stringify
+
+  def update(id: BSONObjectID, obj: T) = {
+    val res1 = Promise[Boolean]
+    val res2 = Promise[Boolean]
+    val globalRes = Promise[Option[T]]
+
+    (this) match {
+      case me : SonPersistenceCompanion[T, _] => {
+        me.updateUpOnUpdate(id,obj).onComplete{
+          _ => res1.trySuccess(true)
         }
       }
-      globalRes.future
+      case _ =>
+        res1.trySuccess(true)
     }
-    
-    
-    def create(obj: T) = {
-      val res1 = Promise[Boolean]
-      val res2 = Promise[Boolean]
-      val globalRes = Promise[Option[T]]
-      
-      (this) match {
-        case me : SonPersistanceCompanion[T, _] => {
-        	  me.updateUpOnCreate(obj).onComplete{
-        	    _ => res1.trySuccess(true)
-        	  }
-        	}
-        case _ =>
-          res1.trySuccess(true)
-      }
-      (this) match {
-        case me : FatherPersistanceCompanion[T, _] => {
-          me.updateDownOnCreate(obj).onComplete{
-        	    _ => res2.trySuccess(true)
-        	  }
-        }
-        case _ =>
-          res2.trySuccess(true)
-      }
-      
-      for {
-        r1 <- res1.future
-        r2 <- res2.future
-      } yield {
-        this._create(obj).onComplete
-        {
-          case Success(s) => globalRes.success(s)
-          case Failure(f) => globalRes.failure(f)
+    (this) match {
+      case me : FatherPersistenceCompanion[T, _] => {
+        me.updateDownOnUpdate(id,obj).onComplete{
+          _ => res2.trySuccess(true)
         }
       }
-      globalRes.future
+      case _ =>
+        res2.trySuccess(true)
     }
-    
-    
-    def delete(id: BSONObjectID) = {
-      val res1 = Promise[Boolean]
-      val res2 = Promise[Boolean]
-      val globalRes = Promise[Boolean]
-      
-      (this) match {
-        case me : SonPersistanceCompanion[T, _] => {
-        	  me.updateUpOnDelete(id).onComplete{
-        	    _ => res1.trySuccess(true)
-        	  }
-        	}
-        case _ =>
-          res1.trySuccess(true)
+
+    for {
+      r1 <- res1.future
+      r2 <- res2.future
+    } yield {
+      this._update(id, obj).onComplete
+      {
+        case Success(s) => globalRes.success(s)
+        case Failure(f) => globalRes.failure(f)
       }
-      (this) match {
-        case me : FatherPersistanceCompanion[T, _] => {
-          me.updateDownOnDelete(id).onComplete{
-        	    _ => res2.trySuccess(true)
-        	  }
-        }
-        case _ =>
-          res2.trySuccess(true)
-      }
-      
-      for {
-        r1 <- res1.future
-        r2 <- res2.future
-      } yield {
-        this._delete(id).onComplete
-        {
-          case Success(s) => globalRes.success(s)
-          case Failure(f) => globalRes.failure(f)
-        }
-      }
-      globalRes.future
-      
     }
+    globalRes.future
+  }
+
+
+  def create(obj: T) = {
+    val res1 = Promise[Boolean]
+    val res2 = Promise[Boolean]
+    val globalRes = Promise[Option[T]]
+
+    (this) match {
+      case me : SonPersistenceCompanion[T, _] => {
+        me.updateUpOnCreate(obj).onComplete{
+          _ => res1.trySuccess(true)
+        }
+      }
+      case _ =>
+        res1.trySuccess(true)
+    }
+    (this) match {
+      case me : FatherPersistenceCompanion[T, _] => {
+        me.updateDownOnCreate(obj).onComplete{
+          _ => res2.trySuccess(true)
+        }
+      }
+      case _ =>
+        res2.trySuccess(true)
+    }
+
+    for {
+      r1 <- res1.future
+      r2 <- res2.future
+    } yield {
+      this._create(obj).onComplete
+      {
+        case Success(s) => globalRes.success(s)
+        case Failure(f) => globalRes.failure(f)
+      }
+    }
+    globalRes.future
+  }
+
+
+  def delete(id: BSONObjectID) = {
+    val res1 = Promise[Boolean]
+    val res2 = Promise[Boolean]
+    val globalRes = Promise[Boolean]
+
+    (this) match {
+      case me : SonPersistenceCompanion[T, _] => {
+        me.updateUpOnDelete(id).onComplete{
+          _ => res1.trySuccess(true)
+        }
+      }
+      case _ =>
+        res1.trySuccess(true)
+    }
+    (this) match {
+      case me : FatherPersistenceCompanion[T, _] => {
+        me.updateDownOnDelete(id).onComplete{
+          _ => res2.trySuccess(true)
+        }
+      }
+      case _ =>
+        res2.trySuccess(true)
+    }
+
+    for {
+      r1 <- res1.future
+      r2 <- res2.future
+    } yield {
+      this._delete(id).onComplete
+      {
+        case Success(s) => globalRes.success(s)
+        case Failure(f) => globalRes.failure(f)
+      }
+    }
+    globalRes.future
+
+  }
 
 }
