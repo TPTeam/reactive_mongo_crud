@@ -1,4 +1,4 @@
-package tp_utils
+package tpUtils
 
 import play.api.libs.json._
 

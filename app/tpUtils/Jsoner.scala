@@ -1,15 +1,15 @@
-package tp_utils
+package tpUtils
 
 import play.api.libs.json._
 
 object Jsoner {
-  
+
   import play.api.libs.json.Writes._
   def toJsVal(i: Int): JsValue =
-          IntWrites.writes(i)
+    IntWrites.writes(i)
   def toJsVal(l: Long): JsValue =
-          LongWrites.writes(l)
+    LongWrites.writes(l)
   def toJsVal(d: Double): JsValue =
-          DoubleWrites.writes(d)
-  
+    DoubleWrites.writes(d)
+
 }

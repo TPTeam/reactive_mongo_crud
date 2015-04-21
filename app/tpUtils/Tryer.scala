@@ -1,4 +1,4 @@
-package tp_utils
+package tpUtils
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -28,7 +28,7 @@ object Tryer {
 }
 
 object Futurizer {
-  
+
   def futo[T <: Any](f: => Future[T]): Future[T] = {
     val res = Promise[T]
     f.onComplete
@@ -38,6 +38,6 @@ object Futurizer {
     }
     res.future
   }
-    
-  
+
+
 }
