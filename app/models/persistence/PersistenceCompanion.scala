@@ -1,5 +1,6 @@
 package models.persistence
 
+import reactivemongo.api.DB
 import reactivemongo.bson._
 import play.api.Logger._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -39,8 +40,9 @@ trait PersistenceCompanion[T <: ModelObj] extends ReferenceJSONer[T] {
     for (
       ret <- result
     ) yield {
-      if (ret.ok) Some(obj)
-      else  {
+      if (ret.ok) {
+        Some(obj)
+      } else  {
         logger.debug("Object not created")
         None
       }

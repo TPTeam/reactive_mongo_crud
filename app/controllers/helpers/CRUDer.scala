@@ -165,4 +165,10 @@ case class CRUDerPaths(
       "submit" -> submit
     ).toString
 
+  def getJson =
+    Json.obj(
+      "create" -> create,
+      "edit" -> edit,
+      "submit" -> submit
+    )
 }

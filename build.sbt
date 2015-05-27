@@ -1,5 +1,5 @@
 val myName = "reactive-mongo-plugin"
-val myVersion = "0.1.26"
+val myVersion = "0.1.28"
 val myOrganization = "org.tpteam"
 
 name := myName
