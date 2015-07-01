@@ -64,7 +64,7 @@ trait ReferenceJSONer[A <: ModelObj] {
 
 trait RefPersistenceCompanion[T <: ModelObj] extends SafePersistenceCompanion[T]{
 
-  override lazy val dbName = "vivathron"
+  //override lazy val dbName = "vivathron"
 
   //def findOneByUniqueString(idStr: String) = findOneByIdString(idStr)
   //def uniqueString(obj: T) = obj.id.stringify
