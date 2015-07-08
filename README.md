@@ -11,4 +11,11 @@ A plugin for Play Framework that bring you all the power of Reactive Mongo:
 
 Check out the template in order to see how it works.
 
+Need to define DB name(s) in your application.conf
+
+dbNames = {
+	db = "myDBName"
+}
+
+
 TPTeam
